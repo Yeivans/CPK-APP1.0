@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>CPK分析工具</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 引入 Font Awesome 用於 icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="./all.min.css">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f9f9f9; }
+        h1 { color: #333; text-align: center; }
+        p { color: #555; }
+        .button-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 24px;
+            margin-bottom: 32px;
+            margin-top: 10px;
+        }
+        .button-bar label {
+            margin-right: 8px;
+        }
+        .button-bar input[type="file"] {
+            display: none;
+        }
+        .custom-file-label {
+            display: inline-block;
+            padding: 8px 18px;
+            background: #e0eafc;
+            border-radius: 5px;
+            cursor: pointer;
+            color: #333;
+            font-size: 15px;
+            border: 1px solid #b5c6e0;
+            transition: background 0.2s;
+        }
+        .custom-file-label:hover {
+            background: #b5c6e0;
+        }
+        .cpk-btn {
+            padding: 10px 28px;
+            background: #38761d;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .cpk-btn:hover {
+            background: #285014;
+        }
+        .container {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: flex-start;
+            max-width: 100%;
+            margin: auto;
+            background: #fff;
+            padding: 32px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .upload-section, .preview-section { flex: 1; margin: 0 10px; }
+        .upload-section { max-width: 300px; }
+        #preview, #wordPreview { margin-top: 20px; border: 1px solid #ddd; padding: 10px; background: #fefefe; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f4f4f4; }
+        .icon { margin-right: 6px; }
+        @media (max-width: 900px) {
+            .container { flex-direction: column; }
+            .upload-section, .preview-section { margin: 0; }
+        }
+        .input-bar {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .custom-input {
+            width: 80px;
+            padding: 6px 8px;
+            border: 1px solid #b5c6e0;
+            border-radius: 4px;
+            font-size: 15px;
+            text-align: center;
+        }
+        .custom-input:focus {
+            border-color: #38761d;
+            outline: none;
+        }
+    </style>
+    <script src="./xlsx.full.min.js"></script>
+    <script src="./mammoth.browser.min.js"></script>
+    <script src="./html2canvas.min.js"></script>
+</head>
+<body>
+    <div style="position: absolute; left: 24px; top: 24px; z-index: 10;">
+        <i class="fa-solid fa-circle-question"
+           style="font-size: 26px; color: #185abd; cursor: pointer;"
+           title="1.點擊導入Excel，導入Chromra ATE Data
+2.輸入Testlog對應每組訊號
+3.點擊”執行CPK“
+4.點擊”導出CPK“或”導出圖片“"></i>
+    </div>
+    <h1><i class="fa-solid fa-chart-column icon"></i>CPK 分析工具</h1>
+    <!-- 引入 Font Awesome 用於 icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- 10个文字框，后面跟“執行CPK”按钮 -->
+    <div class="input-bar" style="display:flex; justify-content:center; gap:12px; margin-bottom:24px;">
+        <!-- 上傳Excel按钮放在最前面 -->
+        <label class="custom-file-label" for="excelUpload" style="margin-right:24px;">
+            <i class="fa-solid fa-file-excel icon" style="color:#217346"></i>上傳 Excel
+            <input type="file" id="excelUpload" accept=".xlsx, .xls">
+        </label>
+        <!-- 隱藏上傳Word/RTF按钮 -->
+        <label class="custom-file-label" for="wordUpload" style="display:none;">
+            <i class="fa-solid fa-file-word icon" style="color:#185abd"></i>上傳 Word/RTF
+            <input type="file" id="wordUpload" accept=".docx, .rtf">
+        </label>
+        <!-- CH1~CH10 -->
+        <input type="text" class="custom-input" placeholder="CH1">
+        <input type="text" class="custom-input" placeholder="CH2">
+        <input type="text" class="custom-input" placeholder="CH3">
+        <input type="text" class="custom-input" placeholder="CH4">
+        <input type="text" class="custom-input" placeholder="CH5">
+        <input type="text" class="custom-input" placeholder="CH6">
+        <input type="text" class="custom-input" placeholder="CH7">
+        <input type="text" class="custom-input" placeholder="CH8">
+        <input type="text" class="custom-input" placeholder="CH9">
+        <input type="text" class="custom-input" placeholder="CH10">
+        <button id="confirmBtn" class="cpk-btn" style="margin-left:24px;background:#38761d; display:none;">
+            <i class="fa-solid fa-check icon"></i>確認
+        </button>
+        <button id="executeCpkBtn" class="cpk-btn" style="margin-left:24px;">
+            <i class="fa-solid fa-gears icon"></i>執行 CPK
+        </button>
+    </div>
+    <!-- 導出按鈕放在下方 -->
+    <div class="button-bar" style="justify-content:center; gap:24px; margin-bottom:32px;">
+        <button id="exportCpkBtn" class="cpk-btn" style="background:#185abd;">
+            <i class="fa-solid fa-download icon"></i>導出CPK
+        </button>
+        <button id="exportImgBtn" class="cpk-btn" style="background:#e69138;">
+            <i class="fa-solid fa-image icon"></i>導出圖片
+        </button>
+    </div>
+    <div class="container">
+        <div class="upload-section">
+        </div>
+        <div class="preview-section">
+            <h3><i class="fa-solid fa-table icon"></i>Excel 文件内容预览：</h3>
+            <div id="tableContainer" style="transform: scale(0.85); transform-origin: top left; width: 100%;"></div>
+            <h3><i class="fa-solid fa-file-lines icon"></i>Word/RTF 文件内容预览：</h3>
+            <div id="wordPreview"></div>
+        </div>
+    </div>
+    <script>
+let excelData = [];
+
+// 工具函数
+function findRowIdx(data, name) {
+    return data.findIndex(row => String(row[0]).toUpperCase().trim() === name.toUpperCase());
+}
+function findRowIdxByCell(data, keyword) {
+    return data.findIndex(row => row.some(cell => String(cell).includes(keyword)));
+}
+function safeParse(v) {
+    return isNaN(parseFloat(v)) ? 0 : parseFloat(v);
+}
+
+// Excel上传
+document.getElementById('excelUpload').addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        excelData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        displayTable(excelData);
+    };
+    reader.readAsArrayBuffer(file);
+});
+
+// 表格预览渲染
+function displayTable(data) {
+    const tableContainer = document.getElementById('tableContainer');
+    tableContainer.innerHTML = '';
+    const table = document.createElement('table');
+    data.forEach((row, rowIdx) => {
+        const tr = document.createElement('tr');
+        const firstCell = (row[0] || '').toString().toUpperCase().trim();
+        const isMergeRow = (row[0] === 'Test Item' || row[0] === 'Test Condition');
+        if (isMergeRow) {
+            let col = 0;
+            while (col < row.length) {
+                let colspan = 1;
+                while (
+                    col + colspan < row.length &&
+                    row[col] !== undefined &&
+                    row[col] === row[col + colspan]
+                ) colspan++;
+                const td = document.createElement('td');
+                td.textContent = row[col] ?? '';
+                if (colspan > 1) td.colSpan = colspan;
+                tr.appendChild(td);
+                col += colspan;
+            }
+            table.appendChild(tr);
+            return;
+        }
+        row.forEach((cell, idx) => {
+            const td = document.createElement('td');
+            if (typeof cell === 'number' && !isNaN(cell)) {
+                td.textContent = cell.toFixed(3);
+            } else if (!isNaN(parseFloat(cell)) && cell !== '' && cell !== null) {
+                td.textContent = Number(cell).toFixed(3);
+            } else {
+                td.textContent = cell ?? '';
+            }
+            // 恢复颜色
+            if (firstCell === 'MAX_SPEC' || firstCell === 'CPU') {
+                td.style.backgroundColor = '#ffe599';
+            } else if (firstCell === 'MIN_SPEC' || firstCell === 'CPL') {
+                td.style.backgroundColor = '#d9ead3';
+            } else if (firstCell === 'CONCLUSION') {
+                if (idx > 0 && cell === 'PASS') {
+                    td.style.backgroundColor = '#38761d';
+                    td.style.color = '#fff';
+                } else if (idx > 0 && cell === 'FAIL') {
+                    td.style.backgroundColor = '#e06666';
+                    td.style.color = '#fff';
+                }
+            }
+            tr.appendChild(td);
+        });
+        table.appendChild(tr);
+    });
+    tableContainer.appendChild(table);
+}
+
+// Word/RTF上传（如不用可注释）
+document.getElementById('wordUpload')?.addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const fileType = file.name.split('.').pop().toLowerCase();
+        if (fileType === 'docx') {
+            mammoth.extractRawText({ arrayBuffer: e.target.result })
+                .then(result => displayWordContent(result.value))
+                .catch(err => console.error("Error reading Word file:", err));
+        }
+        // RTF功能已去除
+    };
+    reader.readAsArrayBuffer(file);
+});
+function displayWordContent(content) {
+    const wordPreview = document.getElementById('wordPreview');
+    wordPreview.innerHTML = '';
+    const paragraph = document.createElement('div');
+    paragraph.innerHTML = content;
+    wordPreview.appendChild(paragraph);
+}
+
+// “確認”按钮功能
+document.getElementById('confirmBtn').addEventListener('click', function() {
+    const inputs = document.querySelectorAll('.input-bar .custom-input');
+    const values = Array.from(inputs).map(input => input.value.trim());
+    let html = '<table style="margin-top:20px;"><tr>';
+    for (let i = 0; i < values.length; i++) html += `<th>CH${i+1}</th>`;
+    html += '</tr><tr>';
+    for (let v of values) html += `<td>${v || ''}</td>`;
+    html += '</tr></table>';
+    let exist = document.getElementById('chTablePreview');
+    if (!exist) {
+        exist = document.createElement('div');
+        exist.id = 'chTablePreview';
+        document.querySelector('.input-bar').after(exist);
+    }
+    exist.innerHTML = html;
+});
+
+// “執行CPK”按钮功能
+document.getElementById('executeCpkBtn').addEventListener('click', function() {
+    // 替換S/N行中的 _1_ ~ _10_，保留“_”
+    const chInputs = document.querySelectorAll('.input-bar .custom-input');
+    const chValues = Array.from(chInputs).map(input => input.value.trim());
+    if (excelData && excelData.length > 0) {
+        const snRowIdx = excelData.findIndex(row => row.some(cell => String(cell).toUpperCase().includes('S/N')));
+        if (snRowIdx !== -1) {
+            for (let i = 0; i < chValues.length; i++) {
+                const target = `_${i + 1}_`;
+                const value = chValues[i];
+                for (let col = 0; col < excelData[snRowIdx].length; col++) {
+                    if (typeof excelData[snRowIdx][col] === 'string' && excelData[snRowIdx][col].includes(target)) {
+                        excelData[snRowIdx][col] = excelData[snRowIdx][col].replaceAll(target, `_${value}_`);
+                    }
+                }
+            }
+        }
+    }
+
+    // 工具函数
+    const findRowIdx = (data, name) => data.findIndex(row => String(row[0]).toUpperCase().trim() === name.toUpperCase());
+    const findRowIdxByCell = (data, keyword) => data.findIndex(row => row.some(cell => String(cell).includes(keyword)));
+    const safeParse = v => isNaN(parseFloat(v)) ? 0 : parseFloat(v);
+
+    // 1. 保留 "S/N" 的上一行及其后内容
+    const snRowIndex = findRowIdxByCell(excelData, 'S/N');
+    if (snRowIndex === -1) {
+        alert('未找到含有 "S/N" 的行！');
+        return;
+    }
+    let filteredData = excelData.slice(Math.max(0, snRowIndex - 1));
+
+    // 2. 在 S/N 上一行的下一行插入空白行，并命名
+    if (filteredData.length > 0) {
+        const emptyRow = Array(filteredData[0].length).fill('');
+        emptyRow[0] = 'Test Condition';
+        filteredData.splice(1, 0, emptyRow);
+    }
+
+    // 3. 在 MAX_SPEC 那一行前插入 Lowest、Hightest、Xbar、S
+    const insertRowsBefore = (arr, idx, names) => {
+        for (let i = 0; i < names.length; i++) {
+            const newRow = Array(arr[0].length).fill('');
+            newRow[0] = names[i];
+            arr.splice(idx + i, 0, newRow);
+        }
+    };
+    let maxSpecIdx = findRowIdxByCell(filteredData, 'MAX_SPEC');
+    if (maxSpecIdx !== -1) {
+        insertRowsBefore(filteredData, maxSpecIdx, ['Lowest', 'Hightest', 'Xbar', 'S']);
+    }
+
+    // 4. 在 MIN_SPEC 那一行后插入6行
+    const minSpecIdx = findRowIdxByCell(filteredData, 'MIN_SPEC');
+    if (minSpecIdx !== -1) {
+        const names = ['Ca', 'Cp', 'CPL', 'CPU', 'CPK', 'Conclusion'];
+        for (let i = 0; i < names.length; i++) {
+            const newRow = Array(filteredData[0].length).fill('');
+            newRow[0] = names[i];
+            filteredData.splice(minSpecIdx + 1 + i, 0, newRow);
+        }
+    }
+
+    // 5. 第一行第一格输入 "Test Item"
+    if (filteredData[0]?.length) filteredData[0][0] = 'Test Item';
+
+    // 6. 剪切所有括号里的内容到“Test Condition”行，并删除“Test Item”行的所有括号及内容
+    if (filteredData.length > 1) {
+        for (let col = 0; col < filteredData[0].length; col++) {
+            const cell = filteredData[0][col];
+            if (typeof cell === 'string') {
+                const matches = [...cell.matchAll(/[（(]([^）)]+)[）)]/g)];
+                if (matches.length > 0) {
+                    filteredData[1][col] = matches.map(m => m[0]).join('');
+                    filteredData[0][col] = cell.replace(/[（(][^）)]+[）)]/g, '').trim();
+                }
+            }
+        }
+    }
+
+    // 7. 删除第二列中等于 0 的行
+    filteredData = filteredData.filter((row, idx) => idx === 0 || row[1] !== 0);
+
+    // 8. 删除表格中含有0的列
+    if (filteredData.length > 0) {
+        const keepCols = [];
+        for (let col = 0; col < filteredData[0].length; col++) {
+            let hasZero = false;
+            for (let row = 1; row < filteredData.length; row++) {
+                if (filteredData[row][col] === 0) { hasZero = true; break; }
+            }
+            if (!hasZero) keepCols.push(col);
+        }
+        filteredData = filteredData.map(row => keepCols.map(col => row[col]));
+    }
+
+    // 9. 删除 MAX_SPEC & MIN_SPEC 行中同一列同时为 "*" 或空白的列
+    maxSpecIdx = findRowIdxByCell(filteredData, 'MAX_SPEC');
+    const minSpecIdx2 = findRowIdxByCell(filteredData, 'MIN_SPEC');
+    if (maxSpecIdx !== -1 && minSpecIdx2 !== -1) {
+        const keepCols = [];
+        for (let col = 0; col < filteredData[0].length; col++) {
+            const maxCell = filteredData[maxSpecIdx][col];
+            const minCell = filteredData[minSpecIdx2][col];
+            const isMaxEmptyOrStar = maxCell == null || String(maxCell).trim() === '' || String(maxCell).trim() === '*';
+            const isMinEmptyOrStar = minCell == null || String(minCell).trim() === '' || String(minCell).trim() === '*';
+            if (!(isMaxEmptyOrStar && isMinEmptyOrStar)) keepCols.push(col);
+        }
+        filteredData = filteredData.map(row => keepCols.map(col => row[col]));
+    }
+
+    // 10. 计算 Lowest 行
+    const lowestRowIdx = findRowIdx(filteredData, 'Lowest');
+    const snIdx = findRowIdxByCell(filteredData, 'S/N');
+    if (lowestRowIdx !== -1 && snIdx !== -1) {
+        for (let col = 1; col < filteredData[0].length; col++) {
+            let min = null;
+            for (let row = snIdx + 1; row < lowestRowIdx; row++) {
+                const val = safeParse(filteredData[row][col]);
+                if (!isNaN(val)) {
+                    if (min === null || val < min) min = val;
+                }
+            }
+            if (min !== null) filteredData[lowestRowIdx][col] = min;
+        }
+    }
+
+    // 11. 计算 Hightest 行
+    const hightestRowIdx = findRowIdx(filteredData, 'Hightest');
+    if (hightestRowIdx !== -1 && snIdx !== -1) {
+        for (let col = 1; col < filteredData[0].length; col++) {
+            let max = null;
+            for (let row = snIdx + 1; row < hightestRowIdx; row++) {
+                const val = safeParse(filteredData[row][col]);
+                if (!isNaN(val)) {
+                    if (max === null || val > max) max = val;
+                }
+            }
+            if (max !== null) filteredData[hightestRowIdx][col] = max;
+        }
+    }
+
+    // 12. 计算 Xbar 行
+    const xbarRowIdx = findRowIdx(filteredData, 'Xbar');
+    if (xbarRowIdx !== -1 && lowestRowIdx !== -1 && snIdx !== -1) {
+        for (let col = 1; col < filteredData[0].length; col++) {
+            let sum = 0, count = 0;
+            for (let row = snIdx + 1; row < lowestRowIdx; row++) {
+                const val = safeParse(filteredData[row][col]);
+                if (!isNaN(val)) {
+                    sum += val;
+                    count++;
+                }
+            }
+            if (count > 0) filteredData[xbarRowIdx][col] = sum / count;
+        }
+    }
+
+    // 13. 计算 S 行（总体标准差）
+    const sRowIdx = findRowIdx(filteredData, 'S');
+    if (sRowIdx !== -1 && lowestRowIdx !== -1 && snIdx !== -1) {
+        for (let col = 1; col < filteredData[0].length; col++) {
+            let values = [];
+            for (let row = snIdx + 1; row < lowestRowIdx; row++) {
+                const val = safeParse(filteredData[row][col]);
+                if (!isNaN(val)) values.push(val);
+            }
+            if (values.length > 0) {
+                const mean = values.reduce((a, b) => a + b, 0) / values.length;
+                const variance = values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / values.length;
+                filteredData[sRowIdx][col] = Math.sqrt(variance);
+            }
+        }
+    }
+
+    // 14. 计算 Ca 行
+    const caRowIdx = findRowIdx(filteredData, 'Ca');
+    const xbarRowIdx2 = findRowIdx(filteredData, 'Xbar');
+    const maxSpecIdx2 = findRowIdx(filteredData, 'MAX_SPEC');
+    const minSpecIdx3 = findRowIdx(filteredData, 'MIN_SPEC');
+    if (caRowIdx !== -1 && xbarRowIdx2 !== -1 && maxSpecIdx2 !== -1 && minSpecIdx3 !== -1) {
+        for (let col = 1; col < filteredData[0].length; col++) {
+            const xbar = safeParse(filteredData[xbarRowIdx2][col]);
+            let maxSpec = safeParse(filteredData[maxSpecIdx2][col]);
+            let minSpec = safeParse(filteredData[minSpecIdx3][col]);
+            if ((maxSpec - minSpec) !== 0) {
+                const ca = Math.abs(
+                    (xbar - (maxSpec + minSpec) / 2) / ((maxSpec - minSpec) / 2)
+                );
+                filteredData[caRowIdx][col] = ca;
+            }
+        }
+    }
+
+    // 15. 计算 Cp 行
+    const cpRowIdx = findRowIdx(filteredData, 'Cp');
+    const sRowIdx2 = findRowIdx(filteredData, 'S');
+    const maxSpecIdx3 = findRowIdx(filteredData, 'MAX_SPEC');
+    const minSpecIdx4 = findRowIdx(filteredData, 'MIN_SPEC');
+    if (cpRowIdx !== -1 && sRowIdx2 !== -1 && maxSpecIdx3 !== -1 && minSpecIdx4 !== -1) {
+        for (let col = 1; col < filteredData[0].length; col++) {
+            let maxSpec = safeParse(filteredData[maxSpecIdx3][col]);
+            let minSpec = safeParse(filteredData[minSpecIdx4][col]);
+            const s = safeParse(filteredData[sRowIdx2][col]);
+            if (s !== 0) {
+                const cp = Math.abs((maxSpec - minSpec) / (6 * s));
+                filteredData[cpRowIdx][col] = cp;
+            }
+        }
+    }
+
+    // 16. 计算 CPL 行：(Xbar-MIN_SPEC)/(3*S)，只在 MIN_SPEC 有值时才计算
+    const cplRowIdx = findRowIdx(filteredData, 'CPL');
+    const xbarRowIdx3 = findRowIdx(filteredData, 'Xbar');
+    const sRowIdx3 = findRowIdx(filteredData, 'S');
+    const minSpecIdx5 = findRowIdx(filteredData, 'MIN_SPEC');
+    if (
+        cplRowIdx !== -1 &&
+        xbarRowIdx3 !== -1 &&
+        sRowIdx3 !== -1 &&
+        minSpecIdx5 !== -1
+    ) {
+        for (let col = 1; col < filteredData[0].length; col++) {
+            const xbar = parseFloat(filteredData[xbarRowIdx3][col]);
+            const minSpec = parseFloat(filteredData[minSpecIdx5][col]);
+            const s = parseFloat(filteredData[sRowIdx3][col]);
+            // 只有 MIN_SPEC 有值才计算
+            if (
+                !isNaN(xbar) &&
+                !isNaN(minSpec) &&
+                !isNaN(s) && s !== 0
+            ) {
+                filteredData[cplRowIdx][col] = (xbar - minSpec) / (3 * s);
+            }
+        }
+    }
+
+    // 17. 计算 CPU 行：((MAX_SPEC-Xbar)/(3*S))，只在 MAX_SPEC 有值时计算
+    const cpuRowIdx = findRowIdx(filteredData, 'CPU');
+    const maxSpecIdx5 = findRowIdx(filteredData, 'MAX_SPEC');
+    const xbarRowIdx4 = findRowIdx(filteredData, 'Xbar');
+    const sRowIdx4 = findRowIdx(filteredData, 'S');
+    if (
+        cpuRowIdx !== -1 &&
+        maxSpecIdx5 !== -1 &&
+        xbarRowIdx4 !== -1 &&
+        sRowIdx4 !== -1
+    ) {
+        for (let col = 1; col < filteredData[0].length; col++) {
+            const maxSpec = parseFloat(filteredData[maxSpecIdx5][col]);
+            const xbar = parseFloat(filteredData[xbarRowIdx4][col]);
+            const s = parseFloat(filteredData[sRowIdx4][col]);
+            // 只有 MAX_SPEC 有值才计算
+            if (
+                !isNaN(maxSpec) &&
+                !isNaN(xbar) &&
+                !isNaN(s) && s !== 0
+            ) {
+                filteredData[cpuRowIdx][col] = (maxSpec - xbar) / (3 * s);
+            }
+        }
+    }
+
+    // 18. 计算 CPK 行：MIN(CPL, CPU)
+    const cpkRowIdx = findRowIdx(filteredData, 'CPK');
+    const cplRowIdx2 = findRowIdx(filteredData, 'CPL');
+    const cpuRowIdx2 = findRowIdx(filteredData, 'CPU');
+    if (cpkRowIdx !== -1 && cplRowIdx2 !== -1 && cpuRowIdx2 !== -1) {
+        for (let col = 1; col < filteredData[0].length; col++) {
+            const cpl = parseFloat(filteredData[cplRowIdx2][col]);
+            const cpu = parseFloat(filteredData[cpuRowIdx2][col]);
+            if (!isNaN(cpl) && !isNaN(cpu)) {
+                filteredData[cpkRowIdx][col] = Math.min(cpl, cpu);
+            } else if (!isNaN(cpl)) {
+                filteredData[cpkRowIdx][col] = cpl;
+            } else if (!isNaN(cpu)) {
+                filteredData[cpkRowIdx][col] = cpu;
+            }
+            // 若都不是数字则不赋值
+        }
+    }
+
+    // 19. 计算 Conclusion 行：CPK>=1.67 显示 PASS，否则 FAIL
+    const conclusionRowIdx = findRowIdx(filteredData, 'Conclusion');
+    const cpkRowIdx2 = findRowIdx(filteredData, 'CPK');
+    if (conclusionRowIdx !== -1 && cpkRowIdx2 !== -1) {
+        for (let col = 1; col < filteredData[0].length; col++) {
+            const cpk = parseFloat(filteredData[cpkRowIdx2][col]);
+            if (!isNaN(cpk)) {
+                filteredData[conclusionRowIdx][col] = cpk >= 1.67 ? 'PASS' : 'FAIL';
+            }
+        }
+    }
+
+    displayTable(filteredData);
+    excelData = filteredData;
+
+    alert('已完成以下操作：\n1. 刪除含有 "S/N" 前面的所有行，但保留 "S/N" 的上一行。\n2. 在 S/N 上一行插入空白行並命名。\n3. 在 MAX_SPEC 前插入 Lowest、Hightest、Xbar、S。\n4. 在 MIN_SPEC 後插入6行。\n5. 在第一行第一格輸入 Test Item。\n6. 剪切括號內容到 Test Condition。\n7. 刪除第二列中等於 0 的行。\n8. 刪除表格中含有0的列。\n9. 刪除 MAX_SPEC & MIN_SPEC 行中“*”或者空白的列（需同時滿足）。\n10. 計算 Lowest 行。\n11. 計算 Hightest 行。\n12. 計算 Xbar 行。\n13. 計算 S 行（整體標準差）。');
+});
+
+// 導出Excel
+document.getElementById('exportCpkBtn').addEventListener('click', function() {
+    if (!excelData || excelData.length === 0) {
+        alert('請先上傳並計算 CPK！');
+        return;
+    }
+    const exportData = JSON.parse(JSON.stringify(excelData));
+    const findRowIdx = (data, name) => data.findIndex(row => String(row[0]).toUpperCase().trim() === name.toUpperCase());
+    const snRowIdx = findRowIdx(exportData, 'S/N');
+    const lowestRowIdx = findRowIdx(exportData, 'Lowest');
+    const hightestRowIdx = findRowIdx(exportData, 'Hightest');
+    const xbarRowIdx = findRowIdx(exportData, 'Xbar');
+    const sRowIdx = findRowIdx(exportData, 'S');
+    const maxSpecIdx = findRowIdx(exportData, 'MAX_SPEC');
+    const minSpecIdx = findRowIdx(exportData, 'MIN_SPEC');
+    const cplRowIdx = findRowIdx(exportData, 'CPL');
+    const cpuRowIdx = findRowIdx(exportData, 'CPU');
+    const cpkRowIdx = findRowIdx(exportData, 'CPK');
+    const conclusionRowIdx = findRowIdx(exportData, 'Conclusion');
+
+    const ws = XLSX.utils.aoa_to_sheet(exportData);
+
+    // 居中和三位小数
+    for (let row = 0; row < exportData.length; row++) {
+        for (let col = 0; col < exportData[0].length; col++) {
+            const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+            const cell = ws[cellAddress];
+            if (cell) {
+                cell.s = { alignment: { horizontal: "center", vertical: "center" } };
+                if (typeof cell.v === 'number') {
+                    cell.v = Number(cell.v.toFixed(3));
+                    cell.z = '0.000';
+                }
+                if (cell.f) cell.z = '0.000';
+            }
+        }
+    }
+
+    // 公式赋值（含MIN_SPEC/MAX_SPEC判斷）
+    for (let col = 1; col < exportData[0].length; col++) {
+        const colLetter = XLSX.utils.encode_col(col);
+        // Lowest
+        if (lowestRowIdx !== -1 && snRowIdx !== -1) {
+            const start = colLetter + (snRowIdx + 2);
+            const end = colLetter + (lowestRowIdx);
+            ws[colLetter + (lowestRowIdx + 1)] = { f: `MIN(${start}:${end})`, z: '0.000' };
+        }
+        // Hightest
+        if (hightestRowIdx !== -1 && snRowIdx !== -1) {
+            const start = colLetter + (snRowIdx + 2);
+            const end = colLetter + (hightestRowIdx);
+            ws[colLetter + (hightestRowIdx + 1)] = { f: `MAX(${start}:${end})`, z: '0.000' };
+        }
+        // Xbar
+        if (xbarRowIdx !== -1 && lowestRowIdx !== -1 && snRowIdx !== -1) {
+            const start = colLetter + (snRowIdx + 2);
+            const end = colLetter + (lowestRowIdx);
+            ws[colLetter + (xbarRowIdx + 1)] = { f: `AVERAGE(${start}:${end})`, z: '0.000' };
+        }
+        // S
+        if (sRowIdx !== -1 && lowestRowIdx !== -1 && snRowIdx !== -1) {
+            const start = colLetter + (snRowIdx + 2);
+            const end = colLetter + (lowestRowIdx);
+            ws[colLetter + (sRowIdx + 1)] = { f: `STDEVA(${start}:${end})`, z: '0.000' };
+        }
+        // CPL
+        if (cplRowIdx !== -1 && xbarRowIdx !== -1 && sRowIdx !== -1 && minSpecIdx !== -1) {
+            const xbarCell = colLetter + (xbarRowIdx + 1);
+            const sCell = colLetter + (sRowIdx + 1);
+            const minSpecCell = colLetter + (minSpecIdx + 1);
+            const minSpecValue = exportData[minSpecIdx][col];
+            if (minSpecValue !== '' && minSpecValue !== null && !isNaN(Number(minSpecValue))) {
+                ws[colLetter + (cplRowIdx + 1)] = { f: `(${xbarCell}-${minSpecCell})/(3*${sCell})`, z: '0.000' };
+            } else {
+                ws[colLetter + (cplRowIdx + 1)] = { v: '' };
+            }
+        }
+        // CPU
+        if (cpuRowIdx !== -1 && maxSpecIdx !== -1 && xbarRowIdx !== -1 && sRowIdx !== -1) {
+            const maxSpecCell = colLetter + (maxSpecIdx + 1);
+            const xbarCell = colLetter + (xbarRowIdx + 1);
+            const sCell = colLetter + (sRowIdx + 1);
+            const maxSpecValue = exportData[maxSpecIdx][col];
+            if (maxSpecValue !== '' && maxSpecValue !== null && !isNaN(Number(maxSpecValue))) {
+                ws[colLetter + (cpuRowIdx + 1)] = { f: `(${maxSpecCell}-${xbarCell})/(3*${sCell})`, z: '0.000' };
+            } else {
+                ws[colLetter + (cpuRowIdx + 1)] = { v: '' };
+            }
+        }
+        // CPK
+        if (cpkRowIdx !== -1 && cplRowIdx !== -1 && cpuRowIdx !== -1) {
+            const cplCell = colLetter + (cplRowIdx + 1);
+            const cpuCell = colLetter + (cpuRowIdx + 1);
+            ws[colLetter + (cpkRowIdx + 1)] = { f: `MIN(${cplCell},${cpuCell})`, z: '0.000' };
+        }
+        // Conclusion
+        if (conclusionRowIdx !== -1 && cpkRowIdx !== -1) {
+            const cpkCell = colLetter + (cpkRowIdx + 1);
+            ws[colLetter + (conclusionRowIdx + 1)] = { f: `IF(${cpkCell}>=1.67,"PASS","FAIL")` };
+        }
+        // Ca
+        if (caRowIdx !== -1 && xbarRowIdx !== -1 && maxSpecIdx !== -1 && minSpecIdx !== -1) {
+            const xbarCell = colLetter + (xbarRowIdx + 1);
+            const maxSpecCell = colLetter + (maxSpecIdx + 1);
+            const minSpecCell = colLetter + (minSpecIdx + 1);
+            ws[colLetter + (caRowIdx + 1)] = {
+                f: `ABS((${xbarCell}-(${maxSpecCell}+${minSpecCell})/2)/[(${maxSpecCell}-${minSpecCell})/2])`,
+                z: '0.000'
+            };
+        }
+        // Cp
+        if (cpRowIdx !== -1 && sRowIdx !== -1 && maxSpecIdx !== -1 && minSpecIdx !== -1) {
+            const maxSpecCell = colLetter + (maxSpecIdx + 1);
+            const minSpecCell = colLetter + (minSpecIdx + 1);
+            const sCell = colLetter + (sRowIdx + 1);
+            ws[colLetter + (cpRowIdx + 1)] = {
+                f: `ABS((${maxSpecCell}-${minSpecCell})/(6*${sCell}))`,
+                z: '0.000'
+            };
+        }
+    }
+
+    // 合并“Test Item”和“Test Condition”行相同内容的单元格
+    const merges = [];
+    [0, 1].forEach(rowIdx => {
+        const row = exportData[rowIdx];
+        let col = 0;
+        while (col < row.length) {
+            let colspan = 1;
+            while (
+                col + colspan < row.length &&
+                row[col] !== undefined &&
+                row[col] === row[col + colspan]
+            ) colspan++;
+            if (colspan > 1) {
+                merges.push({
+                    s: { r: rowIdx, c: col },
+                    e: { r: rowIdx, c: col + colspan - 1 }
+                });
+            }
+            col += colspan;
+        }
+    });
+    ws['!merges'] = merges;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "CPK結果");
+    XLSX.writeFile(wb, "CPK結果.xlsx");
+});
+
+// 導出圖片
+document.getElementById('exportImgBtn').addEventListener('click', function() {
+    const tableContainer = document.getElementById('tableContainer');
+    if (!tableContainer || tableContainer.innerHTML.trim() === '') {
+        alert('請先上傳並計算 CPK！');
+        return;
+    }
+    html2canvas(tableContainer, {
+        backgroundColor: '#fff',
+        scale: 2
+    }).then(function(canvas) {
+        const link = document.createElement('a');
+        link.download = 'CPK表格.jpg';
+        link.href = canvas.toDataURL('image/jpeg', 1.0);
+        link.click();
+    });
+});
+    </script>
+</body>
+</html>
