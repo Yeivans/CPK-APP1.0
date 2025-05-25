@@ -696,7 +696,7 @@ document.getElementById('exportCpkBtn').addEventListener('click', function() {
             const maxSpecCell = colLetter + (maxSpecIdx + 1);
             const minSpecCell = colLetter + (minSpecIdx + 1);
             ws[colLetter + (caRowIdx + 1)] = {
-                f: `ABS((${xbarCell}-(${maxSpecCell}+${minSpecCell})/2)/[(${maxSpecCell}-${minSpecCell})/2])`,
+                f: `ABS((${xbarCell}-(${maxSpecCell}+${minSpecCell})/2)/ ( (${maxSpecCell}-${minSpecCell})/2 ) )`,
                 z: '0.000'
             };
         }
