@@ -603,6 +603,8 @@ document.getElementById('exportCpkBtn').addEventListener('click', function() {
     const sRowIdx = findRowIdx(exportData, 'S');
     const maxSpecIdx = findRowIdx(exportData, 'MAX_SPEC');
     const minSpecIdx = findRowIdx(exportData, 'MIN_SPEC');
+    const caRowIdx = findRowIdx(exportData, 'Ca');      // ← 新增
+    const cpRowIdx = findRowIdx(exportData, 'Cp');      // ← 新增
     const cplRowIdx = findRowIdx(exportData, 'CPL');
     const cpuRowIdx = findRowIdx(exportData, 'CPU');
     const cpkRowIdx = findRowIdx(exportData, 'CPK');
