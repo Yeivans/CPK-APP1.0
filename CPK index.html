@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>CPK Analysis Tools</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #0071e3;
+            --secondary-color: #1d1d1f;
+            --background-color: #f5f5f7;
+            --surface-color: #ffffff;
+            --border-color: #d2d2d7;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
+            margin: 0;
+            padding: 40px;
+            background: var(--background-color);
+            color: var(--secondary-color);
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 32px;
+            margin-bottom: 48px;
+            font-weight: 500;
+            letter-spacing: -0.5px;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            padding: 20px;
+        }
+
+        .tool-card {
+            background: var(--surface-color);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            cursor: pointer;
+            text-decoration: none;
+            color: var(--secondary-color);
+        }
+
+        .tool-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+        }
+
+        .tool-icon {
+            font-size: 48px;
+            color: var(--primary-color);
+            margin-bottom: 16px;
+        }
+
+        .tool-title {
+            font-size: 20px;
+            font-weight: 500;
+            margin-bottom: 12px;
+        }
+
+        .tool-description {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fa-solid fa-microchip"></i> CPK Analysis Tools</h1>
+        
+        <div class="tools-grid">
+            <!-- ATE CPK分析工具卡片 -->
+            <a href="./ATE%20CPK%20Tool.html" class="tool-card">
+                <div class="tool-icon">
+                    <i class="fa-solid fa-chart-column"></i>
+                </div>
+                <div class="tool-title">ATE CPK</div>
+                <div class="tool-description">
+                    自動化 ATE CPK 數據分析與報告生成工具，支持 Excel 數據導入導出
+                </div>
+            </a>
+
+            <!-- Accuracy CPK分析工具卡片 -->
+            <a href="./Accuracy%20CPK%20Tool.html" class="tool-card">
+                <div class="tool-icon">
+                    <i class="fa-solid fa-bullseye"></i>
+                </div>
+                <div class="tool-title">Accuracy CPK</div>
+                <div class="tool-description">
+                    自動化 Accuracy CPK 數據分析與報告生成工具，支持 Excel 數據導入導出
+                </div>
+            </a>
+
+            <!-- FAN CPK分析工具卡片 -->
+            <a href="./FAN%20CPK%20Tool.html" class="tool-card">
+                <div class="tool-icon">
+                    <i class="fa-solid fa-fan"></i>
+                </div>
+                <div class="tool-title">FAN CPK</div>
+                <div class="tool-description">
+                    自動化 FAN CPK 數據分析與報告生成工具，支持 Excel 數據導入導出
+                </div>
+            </a>
+
+            <!-- CPK Data Analysis工具卡片 -->
+            <a href="./CPK%20Data%20Analysis%20Tool.html" class="tool-card">
+                <div class="tool-icon">
+                    <i class="fa-solid fa-magnifying-glass-chart"></i>
+                </div>
+                <div class="tool-title">CPK Data Analysis</div>
+                <div class="tool-description">
+                    全方位 CPK 數據分析工具，支持多種格式數據分析與可視化
+                </div>
+            </a>
+
+            <!-- 开发中的工具卡片 -->
+            <div class="tool-card" style="opacity: 0.5; cursor: not-allowed;">
+                <div class="tool-icon">
+                    <i class="fa-solid fa-plus"></i>
+                </div>
+                <div class="tool-title">更多工具開發中</div>
+                <div class="tool-description">
+                    敬請期待...
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
